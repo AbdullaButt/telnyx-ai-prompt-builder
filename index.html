@@ -917,12 +917,28 @@
                 <label>Telnyx API Key</label>
                 <input type="password" id="telnyxApiKey" placeholder="KEY019... (stored locally, never sent to our servers)">
             </div>
-            <div class="form-row" style="margin-top: 0.5rem;">
-                <label class="feature-chip" data-feature="ai_enhance" style="display: inline-flex; width: auto;">
-                    <input type="checkbox" id="aiEnhanceToggle">
-                    <span class="chip-check">✓</span>
-                    Enable AI Enhancement
-                </label>
+            <div class="form-row">
+                <label>AI Model</label>
+                <select id="aiModel">
+                    <optgroup label="Meta Llama 3.1">
+                        <option value="meta-llama/Meta-Llama-3.1-405B-Instruct">Llama 3.1 405B (Most Powerful)</option>
+                        <option value="meta-llama/Meta-Llama-3.1-70B-Instruct" selected>Llama 3.1 70B (Recommended)</option>
+                        <option value="meta-llama/Meta-Llama-3.1-8B-Instruct">Llama 3.1 8B (Fast)</option>
+                    </optgroup>
+                    <optgroup label="Meta Llama 3.3">
+                        <option value="meta-llama/Llama-3.3-70B-Instruct">Llama 3.3 70B (Latest)</option>
+                    </optgroup>
+                    <optgroup label="Mistral">
+                        <option value="mistralai/Mistral-7B-Instruct-v0.3">Mistral 7B v0.3</option>
+                        <option value="mistralai/Mixtral-8x7B-Instruct-v0.1">Mixtral 8x7B</option>
+                    </optgroup>
+                    <optgroup label="DeepSeek">
+                        <option value="deepseek-ai/DeepSeek-R1-Distill-Llama-70B">DeepSeek R1 70B (Reasoning)</option>
+                    </optgroup>
+                    <optgroup label="Qwen">
+                        <option value="Qwen/Qwen2.5-72B-Instruct">Qwen 2.5 72B</option>
+                    </optgroup>
+                </select>
             </div>
         </div>
         
@@ -1823,7 +1839,7 @@
                         'Authorization': `Bearer ${apiKey}`
                     },
                     body: JSON.stringify({
-                        model: 'meta-llama/Meta-Llama-3.1-70B-Instruct',
+                        model: document.getElementById('aiModel').value,
                         messages: [
                             {
                                 role: 'system',
