@@ -1,0 +1,1884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telnyx AI Assistant - Prompt Builder</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00c896;
+            --primary-dark: #00a87a;
+            --primary-glow: rgba(0, 200, 150, 0.4);
+            --secondary: #6366f1;
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #e0e0e0;
+            --text-muted: #6b7280;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            color: var(--text);
+            overflow-x: hidden;
+        }
+        
+        .cursor {
+            width: 20px; height: 20px;
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transition: transform 0.15s, opacity 0.15s, background 0.15s;
+            mix-blend-mode: difference;
+        }
+        .cursor.hover { transform: scale(2); background: var(--primary); opacity: 0.5; }
+        
+        .bg-gradient {
+            position: fixed; inset: 0;
+            background: 
+                radial-gradient(ellipse at 0% 0%, rgba(0, 200, 150, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 100% 0%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 100% 100%, rgba(236, 72, 153, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 0% 100%, rgba(34, 211, 238, 0.1) 0%, transparent 50%);
+            animation: gradientShift 15s ease infinite;
+            z-index: -2;
+        }
+        @keyframes gradientShift {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(1deg); }
+        }
+        
+        .bg-grid {
+            position: fixed; inset: 0;
+            background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -1;
+            animation: gridMove 20s linear infinite;
+        }
+        @keyframes gridMove { to { transform: translate(50px, 50px); } }
+        
+        .orb {
+            position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.5;
+            animation: orbFloat 20s ease-in-out infinite; pointer-events: none; z-index: -1;
+        }
+        .orb-1 { width: 400px; height: 400px; background: var(--primary); top: -200px; left: -200px; }
+        .orb-2 { width: 300px; height: 300px; background: var(--secondary); bottom: -150px; right: -150px; animation-delay: -5s; }
+        .orb-3 { width: 200px; height: 200px; background: #ec4899; top: 50%; right: 10%; animation-delay: -10s; }
+        @keyframes orbFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(0, 100px) scale(1.1); }
+        }
+        
+        .container { max-width: 680px; margin: 0 auto; padding: 2rem 1rem; }
+        
+        header {
+            text-align: center; margin-bottom: 2rem;
+            animation: headerReveal 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0;
+        }
+        @keyframes headerReveal { to { opacity: 1; transform: translateY(0); } from { transform: translateY(-30px); } }
+        
+        .logo { display: inline-flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
+        .logo-icon {
+            width: 56px; height: 56px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.75rem;
+            animation: logoBreath 4s ease-in-out infinite;
+            box-shadow: 0 0 30px var(--primary-glow);
+        }
+        @keyframes logoBreath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        
+        h1 {
+            font-size: 2rem; font-weight: 700;
+            background: linear-gradient(135deg, #fff, var(--primary), var(--secondary));
+            background-size: 200% auto;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            animation: textShine 4s linear infinite;
+        }
+        @keyframes textShine { to { background-position: 200% center; } }
+        
+        .subtitle { color: var(--text-muted); font-size: 1rem; }
+        
+        .badge {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            padding: 0.4rem 0.8rem;
+            background: rgba(0, 200, 150, 0.1);
+            border: 1px solid rgba(0, 200, 150, 0.2);
+            border-radius: 100px;
+            font-size: 0.75rem; font-weight: 500; color: var(--primary);
+            margin-top: 0.75rem;
+        }
+        .badge::before {
+            content: ''; width: 6px; height: 6px;
+            background: var(--primary); border-radius: 50%;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        
+        .presets {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .preset-btn {
+            padding: 0.5rem 0.875rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .preset-btn:hover {
+            background: rgba(0, 200, 150, 0.1);
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateY(-1px);
+        }
+        .reset-btn:hover {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+        
+        .section {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            opacity: 0; transform: translateY(30px);
+            animation: sectionReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .section:nth-child(1) { animation-delay: 0.1s; }
+        .section:nth-child(2) { animation-delay: 0.15s; }
+        .section:nth-child(3) { animation-delay: 0.2s; }
+        .section:nth-child(4) { animation-delay: 0.25s; }
+        .section:nth-child(5) { animation-delay: 0.3s; }
+        .section:nth-child(6) { animation-delay: 0.35s; }
+        .section:nth-child(7) { animation-delay: 0.4s; }
+        @keyframes sectionReveal { to { opacity: 1; transform: translateY(0); } }
+        
+        .section-title {
+            font-size: 0.8rem; font-weight: 600; color: var(--primary);
+            text-transform: uppercase; letter-spacing: 1px;
+            margin-bottom: 1.25rem;
+            display: flex; align-items: center; gap: 0.6rem;
+        }
+        .section-title::before {
+            content: ''; width: 10px; height: 10px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 3px;
+            animation: iconSpin 8s linear infinite;
+        }
+        @keyframes iconSpin { to { transform: rotate(360deg); } }
+        
+        .section-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            padding-left: 1rem;
+            border-left: 2px solid var(--border);
+        }
+        
+        .count-badge {
+            font-size: 0.65rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            background: rgba(255,255,255,0.05);
+            padding: 0.2rem 0.5rem;
+            border-radius: 10px;
+            margin-left: auto;
+            text-transform: none;
+            letter-spacing: 0;
+        }
+        .count-badge.active { color: var(--primary); background: rgba(0, 200, 150, 0.1); }
+        
+        .form-row { margin-bottom: 1.25rem; }
+        .form-row:last-child { margin-bottom: 0; }
+        .form-row label {
+            display: block; font-size: 0.8rem; font-weight: 500;
+            color: var(--text-muted); margin-bottom: 0.5rem;
+        }
+        
+        input, select, textarea {
+            width: 100%; padding: 1rem 1.25rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            color: #fff; font-family: inherit; font-size: 1rem;
+            transition: all 0.3s;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none; border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(0, 200, 150, 0.1);
+        }
+        textarea { resize: vertical; min-height: 80px; }
+        select {
+            cursor: pointer; appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='%2300c896'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+        }
+        
+        /* Integration Grid */
+        .integration-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+        }
+        @media (max-width: 560px) { .integration-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 400px) { .integration-grid { grid-template-columns: repeat(2, 1fr); } }
+        
+        .integration-card {
+            background: rgba(0, 0, 0, 0.2);
+            border: 2px solid var(--border);
+            border-radius: 14px;
+            padding: 1rem 0.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+        .integration-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(0, 200, 150, 0.4);
+            box-shadow: 0 15px 30px rgba(0, 200, 150, 0.1);
+        }
+        .integration-card:active { transform: scale(0.95); }
+        .integration-card.active {
+            border-color: var(--primary);
+            background: rgba(0, 200, 150, 0.1);
+        }
+        .integration-card .icon {
+            width: 36px; height: 36px;
+            margin: 0 auto 0.4rem;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem;
+            transition: transform 0.3s;
+        }
+        .integration-card:hover .icon { transform: scale(1.2); }
+        .integration-card .name { font-size: 0.75rem; font-weight: 600; }
+        .integration-card .check {
+            position: absolute; top: 6px; right: 6px;
+            width: 18px; height: 18px;
+            background: var(--primary); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; color: #000;
+            transform: scale(0);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .integration-card.active .check { transform: scale(1); }
+        
+        /* SVG Icons */
+        .icon-sf { color: #00A1E0; }
+        .icon-hs { color: #FF7A59; }
+        .icon-zd { color: #03363D; }
+        .icon-cal { color: #4285F4; }
+        .icon-cly { color: #006BFF; }
+        .icon-db { color: #6366f1; }
+        .icon-shop { color: #96BF48; }
+        .icon-stripe { color: #635BFF; }
+        .icon-slack { color: #4A154B; }
+        .icon-jira { color: #0052CC; }
+        .icon-fresh { color: #25C16F; }
+        .icon-sn { color: #81B5A1; }
+        
+        /* Feature Groups */
+        .feature-group { margin-bottom: 1.5rem; }
+        .feature-group:last-child { margin-bottom: 0; }
+        .feature-group-title {
+            font-size: 0.75rem; font-weight: 600;
+            color: var(--text-muted); text-transform: uppercase;
+            letter-spacing: 0.5px; margin-bottom: 0.75rem;
+            padding-left: 0.5rem;
+            border-left: 2px solid var(--primary);
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+        }
+        @media (max-width: 480px) { .feature-grid { grid-template-columns: 1fr; } }
+        
+        .feature-chip {
+            display: flex; align-items: center; gap: 0.6rem;
+            padding: 0.75rem 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+        .feature-chip:hover {
+            background: rgba(0, 200, 150, 0.05);
+            border-color: rgba(0, 200, 150, 0.3);
+        }
+        .feature-chip.active {
+            background: rgba(0, 200, 150, 0.1);
+            border-color: var(--primary);
+        }
+        .feature-chip input { display: none; }
+        .chip-check {
+            width: 18px; height: 18px;
+            border: 2px solid var(--border);
+            border-radius: 5px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .feature-chip.active .chip-check {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #000;
+        }
+        .chip-label { flex: 1; }
+        
+        /* Language Selection */
+        .lang-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        @media (max-width: 480px) { .lang-grid { grid-template-columns: 1fr; } }
+        
+        /* Variables Grid */
+        .var-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem 1rem;
+        }
+        @media (max-width: 480px) { .var-grid { grid-template-columns: 1fr; } }
+        .var-grid .form-row { margin-bottom: 0; }
+        
+        .custom-var-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .custom-var-row input { flex: 1; padding: 0.75rem; font-size: 0.9rem; }
+        .custom-var-row input:first-child { max-width: 140px; }
+        .var-delete {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+            border-radius: 8px;
+            width: 36px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .var-delete:hover { background: rgba(239, 68, 68, 0.3); }
+        
+        /* Output */
+        .output-box {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.25rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            min-height: 200px;
+            max-height: 450px;
+            overflow-y: auto;
+            color: #a5f3c4;
+        }
+        .output-box::-webkit-scrollbar { width: 6px; }
+        .output-box::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 3px; }
+        .output-box::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 3px; }
+        
+        .output-header {
+            display: flex; gap: 6px; margin-bottom: 1rem;
+        }
+        .output-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            animation: dotPulse 2s ease-in-out infinite;
+        }
+        .output-dot:nth-child(1) { background: #ff5f57; }
+        .output-dot:nth-child(2) { background: #ffbd2e; animation-delay: 0.2s; }
+        .output-dot:nth-child(3) { background: #28c840; animation-delay: 0.4s; }
+        @keyframes dotPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+        
+        .typing-cursor {
+            display: inline-block; width: 2px; height: 1em;
+            background: var(--primary);
+            animation: cursorBlink 1s infinite;
+            margin-left: 2px; vertical-align: text-bottom;
+        }
+        @keyframes cursorBlink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+        
+        .prompt-stats {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            padding: 0.75rem;
+            margin-top: 1rem;
+            background: rgba(0, 200, 150, 0.05);
+            border-radius: 10px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .prompt-stats span { color: var(--primary); font-weight: 600; }
+        
+        .actions {
+            display: flex; gap: 0.75rem; margin-top: 1rem;
+        }
+        .btn {
+            flex: 1; padding: 1rem;
+            border-radius: 14px;
+            font-family: inherit; font-size: 0.95rem; font-weight: 600;
+            cursor: pointer; border: none;
+            transition: all 0.3s;
+            display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0, 200, 150, 0.2); }
+        .btn:active { transform: scale(0.95); }
+        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #000; }
+        .btn-secondary { background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid var(--border); }
+        
+        .toast {
+            position: fixed; bottom: 2rem; left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: #000; padding: 1rem 2rem; border-radius: 14px;
+            font-weight: 600; opacity: 0;
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 20px 50px rgba(0, 200, 150, 0.4);
+            z-index: 1000;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        
+        .confetti {
+            position: fixed; width: 10px; height: 10px;
+            pointer-events: none; z-index: 999;
+            animation: confettiFall 3s ease-out forwards;
+        }
+        @keyframes confettiFall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        
+        .particle {
+            position: fixed; width: 3px; height: 3px;
+            background: var(--primary); border-radius: 50%;
+            pointer-events: none; z-index: -1; opacity: 0;
+            animation: particleFloat 12s infinite;
+        }
+        @keyframes particleFloat {
+            0% { transform: translateY(100vh); opacity: 0; }
+            10%, 90% { opacity: 0.6; }
+            100% { transform: translateY(-100vh); opacity: 0; }
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        .footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        .footer a:hover { text-decoration: underline; }
+        .footer strong { color: var(--text); }
+        
+        /* Floating action button for mobile */
+        .fab {
+            display: none;
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 50%;
+            border: none;
+            color: #000;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0, 200, 150, 0.4);
+            z-index: 100;
+            transition: all 0.3s;
+        }
+        .fab:active { transform: scale(0.9); }
+        
+        @media (max-width: 480px) {
+            .container { padding: 1rem; padding-bottom: 5rem; }
+            h1 { font-size: 1.5rem; }
+            .cursor { display: none; }
+            .fab { display: flex; align-items: center; justify-content: center; }
+            .presets { gap: 0.4rem; }
+            .preset-btn { padding: 0.4rem 0.7rem; font-size: 0.7rem; }
+            .integration-grid { gap: 0.5rem; }
+            .integration-card { padding: 0.75rem 0.4rem; }
+            .integration-card .icon { width: 28px; height: 28px; }
+            .integration-card .name { font-size: 0.7rem; }
+            .feature-grid { gap: 0.4rem; }
+            .feature-chip { padding: 0.6rem 0.75rem; font-size: 0.8rem; }
+            .output-box { font-size: 0.75rem; }
+            .actions { flex-wrap: wrap; }
+            .actions .btn { flex: 1 1 45%; }
+        }
+    </style>
+</head>
+<body>
+    <!-- cursor removed -->
+    <div class="bg-gradient"></div>
+    <div class="bg-grid"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div id="particles"></div>
+    
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">⚡</div>
+                <h1>AI Prompt Builder</h1>
+            </div>
+            <p class="subtitle">Telnyx Voice AI Configuration</p>
+            <div class="badge">Live Preview</div>
+            <div class="presets">
+                <button class="preset-btn" onclick="loadPreset('healthcare')">🏥 Healthcare</button>
+                <button class="preset-btn" onclick="loadPreset('finance')">🏦 Banking</button>
+                <button class="preset-btn" onclick="loadPreset('insurance')">🛡️ Insurance</button>
+                <button class="preset-btn" onclick="loadPreset('ecommerce')">🛒 E-commerce</button>
+                <button class="preset-btn" onclick="loadPreset('saas')">💻 SaaS</button>
+                <button class="preset-btn" onclick="loadPreset('restaurant')">🍽️ Restaurant</button>
+                <button class="preset-btn reset-btn" onclick="resetAll()">🔄 Reset</button>
+            </div>
+        </header>
+        
+        <!-- Identity -->
+        <div class="section">
+            <div class="section-title">Assistant Identity</div>
+            <div class="form-row">
+                <label>Name</label>
+                <input type="text" id="name" placeholder="e.g., Sarah" value="Sarah">
+            </div>
+            <div class="form-row">
+                <label>Company</label>
+                <input type="text" id="company" placeholder="e.g., Acme Corp" value="Acme Corp">
+            </div>
+            <div class="form-row">
+                <label>Role / Use Case</label>
+                <select id="role">
+                    <option value="Customer Support Agent">Customer Support Agent</option>
+                    <option value="Sales Representative">Sales Representative</option>
+                    <option value="Appointment Scheduler">Appointment Scheduler</option>
+                    <option value="Technical Support Specialist">Technical Support Specialist</option>
+                    <option value="Billing Specialist">Billing Specialist</option>
+                    <option value="General Receptionist">General Receptionist</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label>Personality</label>
+                <select id="tone">
+                    <option value="professional">Professional & Helpful</option>
+                    <option value="friendly">Friendly & Casual</option>
+                    <option value="formal">Formal & Corporate</option>
+                    <option value="empathetic">Empathetic & Patient</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label>Industry (Optional)</label>
+                <select id="industry">
+                    <option value="">— Select Industry —</option>
+                    <option value="healthcare">🏥 Healthcare</option>
+                    <option value="finance">🏦 Banking & Finance</option>
+                    <option value="insurance">🛡️ Insurance</option>
+                    <option value="retail">🛒 Retail & E-commerce</option>
+                    <option value="travel">✈️ Travel & Hospitality</option>
+                    <option value="telecom">📱 Telecommunications</option>
+                    <option value="utilities">💡 Utilities & Energy</option>
+                    <option value="realestate">🏠 Real Estate</option>
+                    <option value="automotive">🚗 Automotive</option>
+                    <option value="education">🎓 Education</option>
+                    <option value="government">🏛️ Government</option>
+                    <option value="legal">⚖️ Legal Services</option>
+                    <option value="logistics">📦 Logistics & Shipping</option>
+                    <option value="saas">💻 SaaS & Technology</option>
+                    <option value="restaurant">🍽️ Restaurant & Food</option>
+                    <option value="fitness">💪 Fitness & Wellness</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Language -->
+        <div class="section">
+            <div class="section-title">Language Support</div>
+            <div class="lang-grid">
+                <div class="form-row">
+                    <label>Primary Language</label>
+                    <select id="lang1">
+                        <option value="en">🇺🇸 English</option>
+                        <option value="es">🇪🇸 Spanish</option>
+                        <option value="fr">🇫🇷 French</option>
+                        <option value="de">🇩🇪 German</option>
+                        <option value="pt">🇧🇷 Portuguese</option>
+                        <option value="zh">🇨🇳 Mandarin Chinese</option>
+                        <option value="ja">🇯🇵 Japanese</option>
+                        <option value="ko">🇰🇷 Korean</option>
+                        <option value="ar">🇸🇦 Arabic</option>
+                        <option value="hi">🇮🇳 Hindi</option>
+                        <option value="it">🇮🇹 Italian</option>
+                        <option value="nl">🇳🇱 Dutch</option>
+                        <option value="ru">🇷🇺 Russian</option>
+                        <option value="pl">🇵🇱 Polish</option>
+                        <option value="tr">🇹🇷 Turkish</option>
+                        <option value="vi">🇻🇳 Vietnamese</option>
+                        <option value="ur">🇵🇰 Urdu</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label>Secondary Language (Optional)</label>
+                    <select id="lang2">
+                        <option value="">None (Monolingual)</option>
+                        <option value="en">🇺🇸 English</option>
+                        <option value="es">🇪🇸 Spanish</option>
+                        <option value="fr">🇫🇷 French</option>
+                        <option value="de">🇩🇪 German</option>
+                        <option value="pt">🇧🇷 Portuguese</option>
+                        <option value="zh">🇨🇳 Mandarin Chinese</option>
+                        <option value="ja">🇯🇵 Japanese</option>
+                        <option value="ko">🇰🇷 Korean</option>
+                        <option value="ar">🇸🇦 Arabic</option>
+                        <option value="hi">🇮🇳 Hindi</option>
+                        <option value="it">🇮🇹 Italian</option>
+                        <option value="nl">🇳🇱 Dutch</option>
+                        <option value="ru">🇷🇺 Russian</option>
+                        <option value="pl">🇵🇱 Polish</option>
+                        <option value="tr">🇹🇷 Turkish</option>
+                        <option value="vi">🇻🇳 Vietnamese</option>
+                        <option value="ur">🇵🇰 Urdu</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Integrations -->
+        <div class="section">
+            <div class="section-title">Integrations <span class="count-badge" id="int-count">0 selected</span></div>
+            <div class="integration-grid">
+                <div class="integration-card" data-integration="salesforce">
+                    <span class="check">✓</span>
+                    <div class="icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="#00A1E0"><path d="M10.006 5.415a3.958 3.958 0 0 1 3.058-1.445c1.543 0 2.904.882 3.575 2.168a4.541 4.541 0 0 1 1.848-.391c2.54 0 4.6 2.086 4.6 4.66s-2.06 4.66-4.6 4.66a4.55 4.55 0 0 1-.881-.086 3.393 3.393 0 0 1-3.095 2.004 3.37 3.37 0 0 1-1.652-.432 4.26 4.26 0 0 1-3.958 2.702c-2.07 0-3.808-1.49-4.19-3.463a3.924 3.924 0 0 1-.688.061c-2.184 0-3.954-1.793-3.954-4.004 0-1.576.9-2.94 2.21-3.593a4.197 4.197 0 0 1-.156-1.135c0-2.32 1.856-4.2 4.146-4.2 1.402 0 2.643.702 3.397 1.774z"/></svg></div>
+                    <div class="name">Salesforce</div>
+                </div>
+                <div class="integration-card" data-integration="hubspot">
+                    <span class="check">✓</span>
+                    <div class="icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="#FF7A59"><path d="M18.164 7.93V5.084a2.198 2.198 0 0 0 1.267-1.984 2.21 2.21 0 0 0-2.212-2.212 2.21 2.21 0 0 0-2.212 2.212c0 .858.49 1.599 1.205 1.963v2.868a5.667 5.667 0 0 0-2.91 1.472l-7.628-5.926a2.63 2.63 0 0 0 .083-.646 2.617 2.617 0 0 0-2.617-2.617A2.617 2.617 0 0 0 .523 2.831a2.617 2.617 0 0 0 3.2 2.55l7.478 5.815a5.698 5.698 0 0 0-.193 1.472 5.7 5.7 0 0 0 .193 1.472l-7.478 5.815a2.617 2.617 0 0 0-3.2 2.55 2.617 2.617 0 0 0 2.617 2.617 2.617 2.617 0 0 0 2.617-2.617 2.63 2.63 0 0 0-.083-.646l7.628-5.926a5.667 5.667 0 0 0 2.91 1.472v2.868a2.198 2.198 0 0 0-1.205 1.963 2.21 2.21 0 0 0 2.212 2.212 2.21 2.21 0 0 0 2.212-2.212c0-.857-.49-1.598-1.205-1.962v-2.869a5.699 5.699 0 0 0 3.924-5.42 5.699 5.699 0 0 0-5.699-5.699 5.672 5.672 0 0 0-1.775.285z"/></svg></div>
+                    <div class="name">HubSpot</div>
+                </div>
+                <div class="integration-card" data-integration="zendesk">
+                    <span class="check">✓</span>
+                    <div class="icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="#03363D"><path d="M11.09 8.79v12.378L.453 8.79H11.09zm1.817 0h10.64L13.815 21.168V8.79zM11.09 2.832c0 2.942-2.377 5.327-5.318 5.327S.453 5.774.453 2.832h10.636zm1.817 5.327c2.942 0 5.318-2.385 5.318-5.327H12.59c0 2.942 2.386 5.327 5.318 5.327z"/></svg></div>
+                    <div class="name">Zendesk</div>
+                </div>
+                <div class="integration-card" data-integration="google_calendar">
+                    <span class="check">✓</span>
+                    <div class="icon"><svg width="28" height="28" viewBox="0 0 24 24"><rect fill="#4285F4" x="2" y="3" width="20" height="18" rx="2"/><rect fill="#fff" x="4" y="8" width="16" height="11"/><rect fill="#EA4335" x="5" y="2" width="3" height="4" rx="1"/><rect fill="#EA4335" x="16" y="2" width="3" height="4" rx="1"/><text x="12" y="16" text-anchor="middle" fill="#4285F4" font-family="Arial" font-size="8" font-weight="bold">31</text></svg></div>
+                    <div class="name">Google Cal</div>
+                </div>
+                <div class="integration-card" data-integration="calendly">
+                    <span class="check">✓</span>
+                    <div class="icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="#006BFF"><path d="M19.655 14.262c-.185.564-.534 1.085-1.012 1.514-.478.428-1.085.77-1.756.985-.672.216-1.406.303-2.127.256a5.635 5.635 0 0 1-2.04-.52 5.764 5.764 0 0 1-1.674-1.2 5.852 5.852 0 0 1-1.133-1.718 5.714 5.714 0 0 1-.413-2.012c0-.713.14-1.4.413-2.013a5.852 5.852 0 0 1 1.133-1.718 5.764 5.764 0 0 1 1.674-1.2 5.635 5.635 0 0 1 2.04-.52c.721-.047 1.455.04 2.127.256.671.215 1.278.557 1.756.985.478.429.827.95 1.012 1.514h3.19c-.25-1.24-.806-2.4-1.617-3.373a8.197 8.197 0 0 0-2.904-2.254 8.384 8.384 0 0 0-3.564-.8c-1.253 0-2.47.27-3.564.8a8.197 8.197 0 0 0-2.904 2.254A8.37 8.37 0 0 0 4.68 8.445 8.516 8.516 0 0 0 4 12c0 1.24.23 2.44.68 3.555a8.37 8.37 0 0 0 1.911 2.946 8.197 8.197 0 0 0 2.904 2.254 8.384 8.384 0 0 0 3.564.8c1.253 0 2.47-.27 3.564-.8a8.197 8.197 0 0 0 2.904-2.254 8.37 8.37 0 0 0 1.617-3.373h-3.19z"/></svg></div>
+                    <div class="name">Calendly</div>
+                </div>
+                <div class="integration-card" data-integration="shopify">
+                    <span class="check">✓</span>
+                    <div class="icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="#96BF48"><path d="M15.337 3.415c-.03-.18-.18-.27-.3-.285-.12-.015-2.625-.195-2.625-.195s-1.74-1.74-1.935-1.935c-.195-.195-.57-.135-.72-.09-.015 0-.39.12-1.005.315-.6-1.725-1.65-3.315-3.51-3.315h-.165C4.612-2.505 4.017-2.1 3.582-2.1c-2.595 0-3.84 3.24-4.23 4.89-.99.315-1.695.525-1.785.555-.555.18-.57.195-.645.72-.06.39-1.53 11.79-1.53 11.79L10.557 18l6.615-1.44s-1.8-12.96-1.835-13.145zM9.057 1.845l-1.62.495c0-.03 0-.045.015-.075.39-1.215.99-2.445 2.19-2.7-.21.675-.45 1.515-.585 2.28zm-1.17-2.565c.135.03.27.075.39.135-.555.27-.99.975-1.335 1.995l-1.29.39c.375-1.29 1.11-2.445 2.235-2.52zm.66 7.965c.045.78 2.115.945 2.235 2.76.09 1.44-.765 2.43-2.01 2.505-1.485.09-2.31-.78-2.31-.78l.315-1.35s.825.63 1.485.585c.435-.03.585-.39.57-.63-.06-1.02-1.74-.96-1.86-2.61-.09-1.395 1.035-2.82 3.18-2.94.825-.045 1.245.165 1.245.165l-.465 1.77s-.555-.255-1.2-.21c-.945.06-.96.675-.945.825z"/></svg></div>
+                    <div class="name">Shopify</div>
+                </div>
+                <div class="integration-card" data-integration="stripe">
+                    <span class="check">✓</span>
+                    <div class="icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="#635BFF"><path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.846 1.634-2.412 1.634-2.378 0-5.166-1.002-7.326-2.259l-.89 5.563c1.956 1.093 5.036 1.988 8.351 2.042v-.009c.138.004.276.009.415.009 2.6 0 4.716-.64 6.248-1.896 1.662-1.36 2.475-3.319 2.475-5.87 0-4.181-2.505-5.932-6.563-7.084z"/></svg></div>
+                    <div class="name">Stripe</div>
+                </div>
+                <div class="integration-card" data-integration="slack">
+                    <span class="check">✓</span>
+                    <div class="icon"><svg width="28" height="28" viewBox="0 0 24 24"><path fill="#E01E5A" d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313z"/><path fill="#36C5F0" d="M8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312z"/><path fill="#2EB67D" d="M18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312z"/><path fill="#ECB22E" d="M15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg></div>
+                    <div class="name">Slack</div>
+                </div>
+                <div class="integration-card" data-integration="jira">
+                    <span class="check">✓</span>
+                    <div class="icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="#0052CC"><path d="M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24 12.483V1.005A1.003 1.003 0 0 0 23.013 0z"/></svg></div>
+                    <div class="name">Jira</div>
+                </div>
+                <div class="integration-card" data-integration="freshdesk">
+                    <span class="check">✓</span>
+                    <div class="icon"><svg width="28" height="28" viewBox="0 0 24 24"><path fill="#25C16F" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/><path fill="#fff" d="M7 9h10v2H7zm0 3h7v2H7z"/></svg></div>
+                    <div class="name">Freshdesk</div>
+                </div>
+                <div class="integration-card" data-integration="servicenow">
+                    <span class="check">✓</span>
+                    <div class="icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="#81B5A1"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 18.96c-3.84 0-6.96-3.12-6.96-6.96S8.16 5.04 12 5.04s6.96 3.12 6.96 6.96-3.12 6.96-6.96 6.96zm0-11.04a4.08 4.08 0 1 0 0 8.16 4.08 4.08 0 0 0 0-8.16z"/></svg></div>
+                    <div class="name">ServiceNow</div>
+                </div>
+                <div class="integration-card" data-integration="database">
+                    <span class="check">✓</span>
+                    <div class="icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="#6366f1"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M21 12V5"/><path d="M3 12V5"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" fill="none" stroke="#6366f1" stroke-width="1"/></svg></div>
+                    <div class="name">Database</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Features -->
+        <div class="section">
+            <div class="section-title">Features <span class="count-badge" id="feat-count">1 selected</span></div>
+            
+            <div class="feature-group">
+                <div class="feature-group-title">🔐 Verification</div>
+                <div class="feature-grid">
+                    <label class="feature-chip" data-feature="verify_phone">
+                        <input type="checkbox" checked>
+                        <span class="chip-check">✓</span>
+                        <span class="chip-label">Phone Number</span>
+                    </label>
+                    <label class="feature-chip" data-feature="verify_dob">
+                        <input type="checkbox">
+                        <span class="chip-check">✓</span>
+                        <span class="chip-label">Date of Birth</span>
+                    </label>
+                    <label class="feature-chip" data-feature="verify_account">
+                        <input type="checkbox">
+                        <span class="chip-check">✓</span>
+                        <span class="chip-label">Account Number</span>
+                    </label>
+                    <label class="feature-chip" data-feature="verify_zip">
+                        <input type="checkbox">
+                        <span class="chip-check">✓</span>
+                        <span class="chip-label">ZIP / Postal Code</span>
+                    </label>
+                    <label class="feature-chip" data-feature="verify_pin">
+                        <input type="checkbox">
+                        <span class="chip-check">✓</span>
+                        <span class="chip-label">Security PIN</span>
+                    </label>
+                    <label class="feature-chip" data-feature="verify_ssn">
+                        <input type="checkbox">
+                        <span class="chip-check">✓</span>
+                        <span class="chip-label">Last 4 SSN</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="feature-group">
+                <div class="feature-group-title">📱 Messaging</div>
+                <div class="feature-grid">
+                    <label class="feature-chip" data-feature="sms_confirm">
+                        <input type="checkbox">
+                        <span class="chip-check">✓</span>
+                        <span class="chip-label">Send Confirmations</span>
+                    </label>
+                    <label class="feature-chip" data-feature="sms_links">
+                        <input type="checkbox">
+                        <span class="chip-check">✓</span>
+                        <span class="chip-label">Send Links</span>
+                    </label>
+                    <label class="feature-chip" data-feature="sms_summary">
+                        <input type="checkbox">
+                        <span class="chip-check">✓</span>
+                        <span class="chip-label">Send Call Summary</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="feature-group">
+                <div class="feature-group-title">📞 Call Handling</div>
+                <div class="feature-grid">
+                    <label class="feature-chip" data-feature="transfer_warm">
+                        <input type="checkbox">
+                        <span class="chip-check">✓</span>
+                        <span class="chip-label">Warm Transfer</span>
+                    </label>
+                    <label class="feature-chip" data-feature="transfer_cold">
+                        <input type="checkbox">
+                        <span class="chip-check">✓</span>
+                        <span class="chip-label">Cold Transfer</span>
+                    </label>
+                    <label class="feature-chip" data-feature="callback">
+                        <input type="checkbox">
+                        <span class="chip-check">✓</span>
+                        <span class="chip-label">Schedule Callback</span>
+                    </label>
+                    <label class="feature-chip" data-feature="voicemail">
+                        <input type="checkbox">
+                        <span class="chip-check">✓</span>
+                        <span class="chip-label">Voicemail Detection</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="feature-group">
+                <div class="feature-group-title">🔒 Security</div>
+                <div class="feature-grid">
+                    <label class="feature-chip" data-feature="dtmf">
+                        <input type="checkbox">
+                        <span class="chip-check">✓</span>
+                        <span class="chip-label">Keypad Input (DTMF)</span>
+                    </label>
+                    <label class="feature-chip" data-feature="pci">
+                        <input type="checkbox">
+                        <span class="chip-check">✓</span>
+                        <span class="chip-label">PCI Compliance Mode</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="feature-group">
+                <div class="feature-group-title">⏰ Availability</div>
+                <div class="feature-grid">
+                    <label class="feature-chip" data-feature="hours">
+                        <input type="checkbox">
+                        <span class="chip-check">✓</span>
+                        <span class="chip-label">Business Hours</span>
+                    </label>
+                    <label class="feature-chip" data-feature="after_hours">
+                        <input type="checkbox">
+                        <span class="chip-check">✓</span>
+                        <span class="chip-label">After-Hours Message</span>
+                    </label>
+                    <label class="feature-chip" data-feature="holiday">
+                        <input type="checkbox">
+                        <span class="chip-check">✓</span>
+                        <span class="chip-label">Holiday Handling</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Variables -->
+        <div class="section">
+            <div class="section-title">Dynamic Variables</div>
+            <p class="section-desc">Define once, used throughout the prompt automatically. Leave blank to skip.</p>
+            <div class="var-grid">
+                <div class="form-row">
+                    <label>Business Hours</label>
+                    <input type="text" id="var_hours" placeholder="e.g., Mon-Fri 9AM-6PM EST">
+                </div>
+                <div class="form-row">
+                    <label>Support Phone</label>
+                    <input type="text" id="var_phone" placeholder="e.g., 1-800-555-0100">
+                </div>
+                <div class="form-row">
+                    <label>Support Email</label>
+                    <input type="text" id="var_email" placeholder="e.g., support@company.com">
+                </div>
+                <div class="form-row">
+                    <label>Website</label>
+                    <input type="text" id="var_website" placeholder="e.g., www.company.com">
+                </div>
+                <div class="form-row">
+                    <label>Transfer Number</label>
+                    <input type="text" id="var_transfer" placeholder="e.g., +1-555-0101">
+                </div>
+                <div class="form-row">
+                    <label>Max Wait Time</label>
+                    <input type="text" id="var_wait" placeholder="e.g., 5 minutes">
+                </div>
+            </div>
+            <div id="custom-vars" style="margin-top: 1rem;"></div>
+            <button class="btn btn-secondary" onclick="addCustomVar()" style="margin-top: 0.75rem; flex: none; padding: 0.6rem 1rem; font-size: 0.85rem;">
+                ➕ Add Custom Variable
+            </button>
+        </div>
+        
+        <!-- Context -->
+        <div class="section">
+            <div class="section-title">Custom Context</div>
+            <div class="form-row">
+                <textarea id="context" placeholder="Add business-specific instructions, products, policies, or any additional context..."></textarea>
+            </div>
+            <div class="form-row" style="margin-top: 1rem;">
+                <button class="btn btn-primary" onclick="generate()" style="width: 100%; padding: 1rem; font-size: 1.1rem;">✨ Generate Prompt</button>
+            </div>
+        </div>
+        
+        <!-- Output -->
+        <div class="section">
+            <div class="section-title">Generated Prompt</div>
+            <div class="output-box" id="output">
+                <div class="output-header">
+                    <div class="output-dot"></div>
+                    <div class="output-dot"></div>
+                    <div class="output-dot"></div>
+                </div>
+            </div>
+            <div class="prompt-stats" id="stats"></div>
+            <div class="actions">
+                <button class="btn btn-primary" onclick="copyPrompt()">📋 Copy</button>
+                <button class="btn btn-secondary" onclick="downloadPrompt()">💾 Text</button>
+                <button class="btn btn-secondary" onclick="downloadJSON()">📄 JSON</button>
+            </div>
+        </div>
+    </div>
+        
+        <footer class="footer">
+            <p>Powered by <strong>Telnyx Voice AI</strong> • <a href="https://telnyx.com/products/voice-ai" target="_blank">Learn More</a></p>
+        </footer>
+    </div>
+    
+    <div class="toast" id="toast">✨ Copied to clipboard!</div>
+    <button class="fab" onclick="copyPrompt()" title="Copy prompt">📋</button>
+    
+    <script>
+        // Cursor (disabled)
+        
+        // Particles
+        const particlesContainer = document.getElementById('particles');
+        for (let i = 0; i < 25; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.animationDelay = Math.random() * 12 + 's';
+            p.style.animationDuration = (10 + Math.random() * 10) + 's';
+            p.style.background = ['#00c896', '#6366f1', '#ec4899', '#22d3ee'][Math.floor(Math.random() * 4)];
+            particlesContainer.appendChild(p);
+        }
+        
+        // State
+        const state = { integrations: new Set(), features: new Set(['verify_phone']) };
+        
+        // Integrations
+        document.querySelectorAll('.integration-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const int = card.dataset.integration;
+                card.classList.toggle('active');
+                card.classList.contains('active') ? state.integrations.add(int) : state.integrations.delete(int);
+                generate();
+            });
+        });
+        
+        // Features
+        document.querySelectorAll('.feature-chip').forEach(chip => {
+            const input = chip.querySelector('input');
+            if (input.checked) { chip.classList.add('active'); state.features.add(chip.dataset.feature); }
+            chip.addEventListener('click', () => {
+                input.checked = !input.checked;
+                chip.classList.toggle('active', input.checked);
+                input.checked ? state.features.add(chip.dataset.feature) : state.features.delete(chip.dataset.feature);
+                generate();
+            });
+        });
+        
+        // Inputs - no auto-generate, user clicks button
+        
+        const langNames = {
+            en: 'English', es: 'Spanish', fr: 'French', de: 'German', pt: 'Portuguese',
+            zh: 'Mandarin Chinese', ja: 'Japanese', ko: 'Korean', ar: 'Arabic', hi: 'Hindi',
+            it: 'Italian', nl: 'Dutch', ru: 'Russian', pl: 'Polish', tr: 'Turkish', vi: 'Vietnamese',
+            ur: 'Urdu'
+        };
+        
+        // Presets
+        const presets = {
+            healthcare: {
+                name: 'Emily',
+                company: 'HealthFirst Medical Center',
+                industry: 'healthcare',
+                role: 'Patient Services Representative',
+                tone: 'empathetic',
+                lang1: 'en',
+                lang2: 'es',
+                features: ['verify_phone', 'verify_dob', 'sms_confirm', 'callback', 'hours'],
+                integrations: ['google_calendar', 'database'],
+                vars: {
+                    var_hours: 'Mon-Fri 8AM-6PM, Sat 9AM-1PM',
+                    var_phone: '1-800-HEALTH-1',
+                    var_website: 'healthfirst.com/patient-portal'
+                }
+            },
+            ecommerce: {
+                name: 'Alex',
+                company: 'ShopMax',
+                industry: 'retail',
+                role: 'Order Support Agent',
+                tone: 'friendly',
+                lang1: 'en',
+                lang2: '',
+                features: ['verify_phone', 'verify_account', 'sms_confirm', 'sms_links', 'transfer_warm'],
+                integrations: ['shopify', 'zendesk', 'stripe'],
+                vars: {
+                    var_hours: '24/7 Support',
+                    var_email: 'support@shopmax.com',
+                    var_website: 'shopmax.com/track-order'
+                }
+            },
+            saas: {
+                name: 'Jordan',
+                company: 'CloudSync',
+                industry: 'saas',
+                role: 'Technical Support Agent',
+                tone: 'professional',
+                lang1: 'en',
+                lang2: '',
+                features: ['verify_phone', 'verify_account', 'sms_links', 'transfer_warm', 'callback'],
+                integrations: ['zendesk', 'slack', 'jira', 'calendly'],
+                vars: {
+                    var_hours: 'Mon-Fri 6AM-6PM PST',
+                    var_email: 'support@cloudsync.io',
+                    var_website: 'docs.cloudsync.io'
+                }
+            },
+            restaurant: {
+                name: 'Maria',
+                company: 'Bella Italia',
+                industry: 'restaurant',
+                role: 'Reservation Agent',
+                tone: 'friendly',
+                lang1: 'en',
+                lang2: 'es',
+                features: ['sms_confirm', 'hours'],
+                integrations: ['google_calendar', 'database'],
+                vars: {
+                    var_hours: 'Tue-Sun 5PM-10PM, Closed Monday',
+                    var_phone: '555-BELLA-99',
+                    var_website: 'bellaitalia.com/menu'
+                }
+            },
+            finance: {
+                name: 'Michael',
+                company: 'SecureBank',
+                industry: 'finance',
+                role: 'Banking Support Agent',
+                tone: 'formal',
+                lang1: 'en',
+                lang2: '',
+                features: ['verify_phone', 'verify_dob', 'verify_account', 'verify_ssn', 'dtmf', 'transfer_warm', 'pci'],
+                integrations: ['salesforce', 'database'],
+                vars: {
+                    var_hours: 'Mon-Fri 8AM-8PM EST, Sat 9AM-5PM EST',
+                    var_phone: '1-800-SECURE-1',
+                    var_transfer: '1-800-FRAUD-ALERT'
+                }
+            },
+            insurance: {
+                name: 'Lisa',
+                company: 'SafeGuard Insurance',
+                industry: 'insurance',
+                role: 'Claims Intake Specialist',
+                tone: 'empathetic',
+                lang1: 'en',
+                lang2: 'es',
+                features: ['verify_phone', 'verify_dob', 'verify_account', 'sms_confirm', 'sms_summary', 'callback'],
+                integrations: ['salesforce', 'zendesk', 'database'],
+                vars: {
+                    var_hours: '24/7 Claims Hotline',
+                    var_phone: '1-888-CLAIM-NOW',
+                    var_email: 'claims@safeguard.com'
+                }
+            }
+        };
+        
+        function resetAll() {
+            document.getElementById('name').value = 'Sarah';
+            document.getElementById('company').value = 'Acme Corp';
+            document.getElementById('industry').value = '';
+            document.getElementById('industry').dispatchEvent(new Event('change'));
+            document.getElementById('tone').value = 'professional';
+            document.getElementById('lang1').value = 'en';
+            document.getElementById('lang2').value = '';
+            document.getElementById('context').value = '';
+            
+            // Reset variables
+            document.querySelectorAll('[id^="var_"]').forEach(el => el.value = '');
+            document.getElementById('custom-vars').innerHTML = '';
+            
+            // Reset features (keep only phone verification)
+            document.querySelectorAll('.feature-chip').forEach(chip => {
+                chip.classList.remove('active');
+                chip.querySelector('input').checked = false;
+            });
+            state.features.clear();
+            const phoneChip = document.querySelector('[data-feature="verify_phone"]');
+            if (phoneChip) {
+                phoneChip.classList.add('active');
+                phoneChip.querySelector('input').checked = true;
+                state.features.add('verify_phone');
+            }
+            
+            // Reset integrations
+            document.querySelectorAll('.integration-card').forEach(card => card.classList.remove('active'));
+            state.integrations.clear();
+            
+            generate();
+        }
+        
+        function loadPreset(name) {
+            const p = presets[name];
+            if (!p) return;
+            
+            // Set basic fields
+            document.getElementById('name').value = p.name;
+            document.getElementById('company').value = p.company;
+            document.getElementById('industry').value = p.industry;
+            document.getElementById('tone').value = p.tone;
+            document.getElementById('lang1').value = p.lang1;
+            document.getElementById('lang2').value = p.lang2;
+            
+            // Trigger industry change to update roles
+            document.getElementById('industry').dispatchEvent(new Event('change'));
+            
+            // Set role after roles are updated
+            setTimeout(() => {
+                document.getElementById('role').value = p.role;
+            }, 50);
+            
+            // Set variables
+            Object.entries(p.vars).forEach(([k, v]) => {
+                const el = document.getElementById(k);
+                if (el) el.value = v;
+            });
+            
+            // Clear and set features
+            document.querySelectorAll('.feature-chip').forEach(chip => {
+                chip.classList.remove('active');
+                chip.querySelector('input').checked = false;
+            });
+            state.features.clear();
+            p.features.forEach(f => {
+                const chip = document.querySelector(`[data-feature="${f}"]`);
+                if (chip) {
+                    chip.classList.add('active');
+                    chip.querySelector('input').checked = true;
+                    state.features.add(f);
+                }
+            });
+            
+            // Clear and set integrations
+            document.querySelectorAll('.integration-card').forEach(card => card.classList.remove('active'));
+            state.integrations.clear();
+            p.integrations.forEach(i => {
+                const card = document.querySelector(`[data-integration="${i}"]`);
+                if (card) {
+                    card.classList.add('active');
+                    state.integrations.add(i);
+                }
+            });
+            
+            generate();
+            
+            // Show toast
+            const toast = document.getElementById('toast');
+            toast.textContent = `✨ Loaded ${name.charAt(0).toUpperCase() + name.slice(1)} preset!`;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+        
+        // Industry-specific roles
+        const industryRoles = {
+            '': [
+                'Customer Support Agent', 'Sales Representative', 'Appointment Scheduler',
+                'Technical Support Specialist', 'Billing Specialist', 'General Receptionist',
+                'Account Manager', 'Lead Qualifier', 'Order Status Agent', 'Feedback Collector'
+            ],
+            healthcare: [
+                'Patient Services Representative', 'Appointment Scheduler', 'Prescription Refill Agent',
+                'Insurance Verification Specialist', 'Nurse Triage Assistant', 'Medical Records Coordinator',
+                'Referral Coordinator', 'Lab Results Agent', 'Billing Specialist', 'Patient Follow-up Agent',
+                'Mental Health Intake Coordinator', 'Pharmacy Support Agent', 'Home Health Scheduler'
+            ],
+            finance: [
+                'Banking Support Agent', 'Loan Officer Assistant', 'Fraud Alert Specialist',
+                'Account Services Representative', 'Credit Card Support Agent', 'Mortgage Assistance Agent',
+                'Investment Services Representative', 'Wire Transfer Specialist', 'Dispute Resolution Agent',
+                'New Account Specialist', 'Mobile Banking Support', 'Business Banking Agent'
+            ],
+            insurance: [
+                'Claims Intake Specialist', 'Policy Services Agent', 'Coverage Verification Agent',
+                'Premium Payment Specialist', 'Renewal Coordinator', 'New Policy Sales Agent',
+                'Auto Claims Representative', 'Home Insurance Specialist', 'Life Insurance Agent',
+                'Workers Comp Coordinator', 'Benefits Enrollment Agent', 'Claims Status Agent'
+            ],
+            retail: [
+                'Order Support Agent', 'Returns & Exchanges Specialist', 'Product Information Agent',
+                'Shipping & Delivery Support', 'Loyalty Program Agent', 'Personal Shopper',
+                'Price Match Specialist', 'Gift Registry Assistant', 'Store Locator Agent',
+                'Inventory Checker', 'Promotion & Deals Agent', 'VIP Customer Concierge'
+            ],
+            travel: [
+                'Reservation Agent', 'Booking Modification Specialist', 'Travel Concierge',
+                'Flight Status Agent', 'Hotel Booking Agent', 'Car Rental Support',
+                'Loyalty Program Specialist', 'Group Travel Coordinator', 'Cruise Specialist',
+                'Travel Insurance Agent', 'Cancellation & Refund Agent', 'Destination Expert'
+            ],
+            telecom: [
+                'Technical Support Agent', 'Plan & Pricing Specialist', 'Billing Support Agent',
+                'New Line Activation Agent', 'Device Support Specialist', 'Outage Reporter',
+                'Upgrade Specialist', 'Retention Agent', 'Business Account Manager',
+                'International Roaming Support', 'Data Plan Advisor', 'Port-in Specialist'
+            ],
+            utilities: [
+                'Outage Reporter Agent', 'Billing & Payment Agent', 'Service Start/Stop Agent',
+                'Usage Inquiry Specialist', 'Payment Plan Coordinator', 'Energy Efficiency Advisor',
+                'Emergency Services Dispatcher', 'Meter Reading Support', 'Solar Program Agent',
+                'Budget Billing Specialist', 'Commercial Account Manager', 'Field Service Scheduler'
+            ],
+            realestate: [
+                'Property Inquiry Agent', 'Showing Scheduler', 'Lead Qualification Agent',
+                'Rental Application Agent', 'Maintenance Request Coordinator', 'Lease Renewal Agent',
+                'Open House Coordinator', 'Mortgage Referral Agent', 'Property Management Support',
+                'Tenant Services Agent', 'New Construction Specialist', 'Investment Property Advisor'
+            ],
+            automotive: [
+                'Service Appointment Scheduler', 'Parts Department Agent', 'Sales Lead Qualifier',
+                'Test Drive Scheduler', 'Recall Notification Agent', 'Finance & Lease Specialist',
+                'Warranty Support Agent', 'Roadside Assistance Coordinator', 'Trade-in Valuation Agent',
+                'Fleet Services Manager', 'Body Shop Coordinator', 'Customer Delivery Coordinator'
+            ],
+            education: [
+                'Admissions Information Agent', 'Enrollment Specialist', 'Financial Aid Advisor',
+                'Course Registration Support', 'Student Services Representative', 'Alumni Relations Agent',
+                'Campus Tour Scheduler', 'Academic Records Specialist', 'IT Help Desk Agent',
+                'Housing Coordinator', 'Career Services Agent', 'International Student Advisor'
+            ],
+            government: [
+                'Citizen Services Agent', 'Benefits Inquiry Specialist', 'Permit Application Agent',
+                'Tax Assistance Representative', 'License Renewal Agent', 'Social Services Coordinator',
+                'Public Records Agent', 'Complaint & Feedback Handler', 'Emergency Services Dispatcher',
+                'Voter Registration Agent', 'Immigration Services Support', 'Court Services Agent'
+            ],
+            legal: [
+                'Legal Intake Specialist', 'Consultation Scheduler', 'Case Status Agent',
+                'Document Request Coordinator', 'Billing Inquiry Agent', 'Client Services Representative',
+                'Court Date Reminder Agent', 'Paralegal Support Agent', 'New Client Qualifier',
+                'Settlement Coordinator', 'Estate Planning Intake', 'Immigration Case Agent'
+            ],
+            logistics: [
+                'Shipment Tracking Agent', 'Delivery Scheduling Specialist', 'Claims & Disputes Agent',
+                'Pickup Request Coordinator', 'Rate Quote Specialist', 'International Shipping Agent',
+                'Warehouse Inquiry Agent', 'Last Mile Delivery Support', 'Freight Booking Agent',
+                'Returns Processing Agent', 'Fleet Dispatch Coordinator', 'Customs Documentation Agent'
+            ],
+            saas: [
+                'Technical Support Agent', 'Onboarding Specialist', 'Account Management Agent',
+                'Feature Request Coordinator', 'Subscription & Billing Agent', 'Integration Support',
+                'API Support Specialist', 'Customer Success Agent', 'Trial Conversion Agent',
+                'Enterprise Sales Assistant', 'Product Demo Scheduler', 'Churn Prevention Agent'
+            ],
+            restaurant: [
+                'Reservation Agent', 'Takeout & Delivery Order Agent', 'Catering Coordinator',
+                'Table Availability Agent', 'Menu Information Specialist', 'Gift Card Support',
+                'Private Event Coordinator', 'Loyalty Program Agent', 'Feedback & Complaint Handler',
+                'Dietary Accommodation Specialist', 'Waitlist Manager', 'Special Occasion Coordinator'
+            ],
+            fitness: [
+                'Membership Sales Agent', 'Class Booking Specialist', 'Personal Training Scheduler',
+                'Membership Services Agent', 'Facility Information Agent', 'Cancellation & Freeze Agent',
+                'Group Fitness Coordinator', 'Nutrition Consultation Scheduler', 'Kids Club Coordinator',
+                'Corporate Wellness Agent', 'PT Lead Qualifier', 'Membership Renewal Agent'
+            ]
+        };
+        
+        // Update roles when industry changes
+        document.getElementById('industry').addEventListener('change', function() {
+            const roleSelect = document.getElementById('role');
+            const industry = this.value;
+            const roles = industryRoles[industry] || industryRoles[''];
+            
+            // Animate the change
+            roleSelect.style.opacity = '0';
+            roleSelect.style.transform = 'translateY(-5px)';
+            
+            setTimeout(() => {
+                roleSelect.innerHTML = roles.map(r => `<option value="${r}">${r}</option>`).join('');
+                roleSelect.style.transition = 'all 0.3s ease';
+                roleSelect.style.opacity = '1';
+                roleSelect.style.transform = 'translateY(0)';
+                generate();
+            }, 150);
+        });
+        
+        // Custom variables
+        let customVarCount = 0;
+        function addCustomVar() {
+            customVarCount++;
+            const container = document.getElementById('custom-vars');
+            const row = document.createElement('div');
+            row.className = 'custom-var-row';
+            row.innerHTML = `
+                <input type="text" placeholder="Variable name" class="custom-var-name" data-id="${customVarCount}">
+                <input type="text" placeholder="Value" class="custom-var-value" data-id="${customVarCount}">
+                <button class="var-delete" onclick="this.parentElement.remove(); generate();">✕</button>
+            `;
+            container.appendChild(row);
+            row.querySelectorAll('input').forEach(i => i.addEventListener('input', generate));
+        }
+        
+        function getVariables() {
+            const vars = {};
+            // Built-in vars
+            const hours = document.getElementById('var_hours').value;
+            const phone = document.getElementById('var_phone').value;
+            const email = document.getElementById('var_email').value;
+            const website = document.getElementById('var_website').value;
+            const transfer = document.getElementById('var_transfer').value;
+            const wait = document.getElementById('var_wait').value;
+            
+            if (hours) vars.business_hours = hours;
+            if (phone) vars.support_phone = phone;
+            if (email) vars.support_email = email;
+            if (website) vars.website = website;
+            if (transfer) vars.transfer_number = transfer;
+            if (wait) vars.max_wait = wait;
+            
+            // Custom vars
+            document.querySelectorAll('.custom-var-row').forEach(row => {
+                const name = row.querySelector('.custom-var-name').value.trim();
+                const value = row.querySelector('.custom-var-value').value.trim();
+                if (name && value) vars[name.toLowerCase().replace(/\s+/g, '_')] = value;
+            });
+            
+            return vars;
+        }
+        
+        function generate() {
+            const name = document.getElementById('name').value || 'Assistant';
+            const company = document.getElementById('company').value || 'the company';
+            const role = document.getElementById('role').value || 'assistant';
+            const tone = document.getElementById('tone').value;
+            const context = document.getElementById('context').value;
+            const lang1 = document.getElementById('lang1').value;
+            const lang2 = document.getElementById('lang2').value;
+            
+            const tones = {
+                professional: 'professional, helpful, and efficient',
+                friendly: 'friendly, warm, and conversational',
+                formal: 'formal, respectful, and corporate',
+                empathetic: 'empathetic, understanding, and patient'
+            };
+            
+            const industry = document.getElementById('industry').value;
+            const industryContext = {
+                healthcare: {
+                    context: 'You work in healthcare. Be HIPAA-compliant — never share patient information without verification. Use proper medical terminology but explain in plain language when needed.',
+                    scenarios: 'appointments, prescription refills, test results, insurance verification, referrals'
+                },
+                finance: {
+                    context: 'You work in banking/finance. Be security-conscious and compliant with financial regulations. Never share account details without proper authentication.',
+                    scenarios: 'account inquiries, transaction disputes, loan applications, card activation, fraud alerts'
+                },
+                insurance: {
+                    context: 'You work in insurance. Be thorough when gathering claim details. Explain policy terms clearly and set proper expectations on timelines.',
+                    scenarios: 'claims filing, policy questions, coverage verification, premium payments, renewals'
+                },
+                retail: {
+                    context: 'You work in retail/e-commerce. Be helpful with product questions and order issues. Turn complaints into positive experiences.',
+                    scenarios: 'order status, returns/exchanges, product availability, shipping issues, promotions'
+                },
+                travel: {
+                    context: 'You work in travel/hospitality. Be accommodating and solution-oriented. Understand urgency of travel-related issues.',
+                    scenarios: 'reservations, cancellations, itinerary changes, loyalty programs, special requests'
+                },
+                telecom: {
+                    context: 'You work in telecommunications. Be patient with technical issues. Offer troubleshooting before escalation.',
+                    scenarios: 'service outages, billing questions, plan changes, device support, account management'
+                },
+                utilities: {
+                    context: 'You work in utilities/energy. Understand that service issues can be urgent. Be clear about timelines and safety.',
+                    scenarios: 'outage reports, billing inquiries, service start/stop, usage questions, payment plans'
+                },
+                realestate: {
+                    context: 'You work in real estate. Be knowledgeable about properties and processes. Qualify leads appropriately.',
+                    scenarios: 'property inquiries, viewing scheduling, application status, maintenance requests, lease questions'
+                },
+                automotive: {
+                    context: 'You work in automotive. Understand vehicle terminology. Be helpful with both sales and service inquiries.',
+                    scenarios: 'service appointments, parts inquiries, recall information, test drives, financing'
+                },
+                education: {
+                    context: 'You work in education. Be supportive and informative. Respect student privacy (FERPA compliance).',
+                    scenarios: 'enrollment, course information, financial aid, academic records, campus services'
+                },
+                government: {
+                    context: 'You work in government services. Be clear and precise. Help navigate bureaucratic processes patiently.',
+                    scenarios: 'application status, document requests, permit inquiries, benefit questions, complaints'
+                },
+                legal: {
+                    context: 'You work in legal services. Be precise with language. Never provide legal advice — only information and scheduling.',
+                    scenarios: 'consultation scheduling, case status, document requests, billing inquiries'
+                },
+                logistics: {
+                    context: 'You work in logistics/shipping. Be proactive with tracking updates. Understand delivery urgency.',
+                    scenarios: 'shipment tracking, delivery scheduling, claims, pickup requests, rate quotes'
+                },
+                saas: {
+                    context: 'You work in SaaS/technology. Be technically capable but explain simply. Offer workarounds when possible.',
+                    scenarios: 'technical support, account management, feature requests, billing, onboarding'
+                },
+                restaurant: {
+                    context: 'You work in restaurant/food service. Be warm and accommodating. Handle dietary restrictions carefully.',
+                    scenarios: 'reservations, takeout orders, menu questions, dietary accommodations, feedback'
+                },
+                fitness: {
+                    context: 'You work in fitness/wellness. Be motivating and supportive. Understand membership and scheduling needs.',
+                    scenarios: 'class bookings, membership inquiries, personal training, facility information, cancellations'
+                }
+            };
+            
+            let p = `You are ${name}, a ${role} for ${company}. You are ${tones[tone]}.\n\n`;
+            
+            // Industry context
+            if (industry && industryContext[industry]) {
+                p += `## Industry Context\n${industryContext[industry].context}\n\nCommon scenarios: ${industryContext[industry].scenarios}.\n\n`;
+            }
+            
+            // Language with native examples
+            const langGreetings = {
+                en: { hello: 'Hello', thanks: 'Thank you', goodbye: 'Goodbye, have a great day!' },
+                es: { hello: 'Hola', thanks: 'Gracias', goodbye: '¡Adiós, que tenga un buen día!' },
+                fr: { hello: 'Bonjour', thanks: 'Merci', goodbye: 'Au revoir, bonne journée!' },
+                de: { hello: 'Guten Tag', thanks: 'Danke', goodbye: 'Auf Wiedersehen!' },
+                pt: { hello: 'Olá', thanks: 'Obrigado', goodbye: 'Tchau, tenha um bom dia!' },
+                zh: { hello: '您好 (Nín hǎo)', thanks: '谢谢 (Xièxiè)', goodbye: '再见 (Zàijiàn)' },
+                ja: { hello: 'こんにちは (Konnichiwa)', thanks: 'ありがとうございます (Arigatō gozaimasu)', goodbye: 'さようなら (Sayōnara)' },
+                ko: { hello: '안녕하세요 (Annyeonghaseyo)', thanks: '감사합니다 (Gamsahamnida)', goodbye: '안녕히 가세요 (Annyeonghi gaseyo)' },
+                ar: { hello: 'مرحبا (Marhaba)', thanks: 'شكرا (Shukran)', goodbye: 'مع السلامة (Ma\'a salama)' },
+                hi: { hello: 'नमस्ते (Namaste)', thanks: 'धन्यवाद (Dhanyavaad)', goodbye: 'अलविदा (Alvida)' },
+                it: { hello: 'Buongiorno', thanks: 'Grazie', goodbye: 'Arrivederci!' },
+                nl: { hello: 'Hallo', thanks: 'Dank u', goodbye: 'Tot ziens!' },
+                ru: { hello: 'Здравствуйте (Zdravstvuyte)', thanks: 'Спасибо (Spasibo)', goodbye: 'До свидания (Do svidaniya)' },
+                pl: { hello: 'Dzień dobry', thanks: 'Dziękuję', goodbye: 'Do widzenia!' },
+                tr: { hello: 'Merhaba', thanks: 'Teşekkürler', goodbye: 'Hoşça kalın!' },
+                vi: { hello: 'Xin chào', thanks: 'Cảm ơn', goodbye: 'Tạm biệt!' },
+                ur: { hello: 'السلام علیکم (Assalam-u-Alaikum)', thanks: 'شکریہ (Shukriya)', goodbye: 'اللہ حافظ (Allah Hafiz)' }
+            };
+            
+            if (lang2 && lang2 !== lang1) {
+                const g1 = langGreetings[lang1] || langGreetings.en;
+                const g2 = langGreetings[lang2] || langGreetings.en;
+                
+                p += `## Language - Bilingual (${langNames[lang1]} / ${langNames[lang2]})\n`;
+                p += `You are fluent in both ${langNames[lang1]} and ${langNames[lang2]}. Detect the caller's language and respond accordingly.\n\n`;
+                p += `**${langNames[lang1]} phrases:**\n`;
+                p += `- Greeting: "${g1.hello}"\n`;
+                p += `- Thank you: "${g1.thanks}"\n`;
+                p += `- Closing: "${g1.goodbye}"\n\n`;
+                p += `**${langNames[lang2]} phrases:**\n`;
+                p += `- Greeting: "${g2.hello}"\n`;
+                p += `- Thank you: "${g2.thanks}"\n`;
+                p += `- Closing: "${g2.goodbye}"\n\n`;
+                p += `If the caller starts in ${langNames[lang2]}, respond entirely in ${langNames[lang2]}. Switch languages naturally if they do.\n\n`;
+                
+                // Add extra phrases for all languages
+                const callPhrases = {
+                    ur: [
+                        `"میں آپ کی کیسے مدد کر سکتا/سکتی ہوں؟" (How can I help you?)`,
+                        `"کیا آپ ایک میٹنگ بک کرنا چاہیں گے؟" (Would you like to book a meeting?)`,
+                        `"آپ کا نام کیا ہے؟" (What is your name?)`,
+                        `"آپ کا فون نمبر کیا ہے؟" (What is your phone number?)`,
+                        `"کیا یہ وقت آپ کے لیے مناسب ہے؟" (Is this time suitable for you?)`,
+                        `"ہمارے مشیر آپ سے جلد رابطہ کریں گے" (Our consultant will contact you soon)`,
+                        `"آپ کا بہت شکریہ، اللہ حافظ" (Thank you very much, goodbye)`
+                    ],
+                    es: [
+                        `"¿En qué puedo ayudarle?" (How can I help you?)`,
+                        `"¿Le gustaría programar una cita?" (Would you like to schedule an appointment?)`,
+                        `"¿Cuál es su nombre?" (What is your name?)`,
+                        `"¿Cuál es su número de teléfono?" (What is your phone number?)`,
+                        `"¿Este horario le conviene?" (Is this time convenient for you?)`,
+                        `"Gracias por su tiempo" (Thank you for your time)`
+                    ],
+                    ar: [
+                        `"كيف يمكنني مساعدتك؟" (How can I help you?)`,
+                        `"هل تريد حجز موعد؟" (Would you like to book an appointment?)`,
+                        `"ما اسمك؟" (What is your name?)`,
+                        `"ما رقم هاتفك؟" (What is your phone number?)`,
+                        `"هل هذا الوقت مناسب لك؟" (Is this time suitable for you?)`,
+                        `"شكراً لوقتك" (Thank you for your time)`
+                    ],
+                    hi: [
+                        `"मैं आपकी कैसे मदद कर सकता/सकती हूं?" (How can I help you?)`,
+                        `"क्या आप एक मीटिंग बुक करना चाहेंगे?" (Would you like to book a meeting?)`,
+                        `"आपका नाम क्या है?" (What is your name?)`,
+                        `"आपका फोन नंबर क्या है?" (What is your phone number?)`,
+                        `"क्या यह समय आपके लिए सही है?" (Is this time right for you?)`,
+                        `"आपके समय के लिए धन्यवाद" (Thank you for your time)`
+                    ],
+                    fr: [
+                        `"Comment puis-je vous aider?" (How can I help you?)`,
+                        `"Souhaitez-vous prendre rendez-vous?" (Would you like to make an appointment?)`,
+                        `"Quel est votre nom?" (What is your name?)`,
+                        `"Quel est votre numéro de téléphone?" (What is your phone number?)`,
+                        `"Est-ce que cet horaire vous convient?" (Does this time suit you?)`,
+                        `"Merci pour votre temps" (Thank you for your time)`
+                    ],
+                    de: [
+                        `"Wie kann ich Ihnen helfen?" (How can I help you?)`,
+                        `"Möchten Sie einen Termin vereinbaren?" (Would you like to schedule an appointment?)`,
+                        `"Wie ist Ihr Name?" (What is your name?)`,
+                        `"Wie ist Ihre Telefonnummer?" (What is your phone number?)`,
+                        `"Passt Ihnen dieser Termin?" (Does this time suit you?)`,
+                        `"Vielen Dank für Ihre Zeit" (Thank you for your time)`
+                    ],
+                    pt: [
+                        `"Como posso ajudá-lo?" (How can I help you?)`,
+                        `"Gostaria de agendar uma reunião?" (Would you like to schedule a meeting?)`,
+                        `"Qual é o seu nome?" (What is your name?)`,
+                        `"Qual é o seu número de telefone?" (What is your phone number?)`,
+                        `"Esse horário é conveniente para você?" (Is this time convenient for you?)`,
+                        `"Obrigado pelo seu tempo" (Thank you for your time)`
+                    ],
+                    zh: [
+                        `"我能帮您什么？" (How can I help you?)`,
+                        `"您想预约吗？" (Would you like to make an appointment?)`,
+                        `"请问您贵姓？" (What is your name?)`,
+                        `"您的电话号码是多少？" (What is your phone number?)`,
+                        `"这个时间方便吗？" (Is this time convenient?)`,
+                        `"感谢您的时间" (Thank you for your time)`
+                    ],
+                    ja: [
+                        `"どのようにお手伝いできますか？" (How can I help you?)`,
+                        `"ご予約をお取りしましょうか？" (Would you like to make an appointment?)`,
+                        `"お名前を教えていただけますか？" (May I have your name?)`,
+                        `"お電話番号を教えていただけますか？" (May I have your phone number?)`,
+                        `"この時間はご都合いかがですか？" (Is this time convenient for you?)`,
+                        `"お時間いただきありがとうございます" (Thank you for your time)`
+                    ],
+                    ko: [
+                        `"어떻게 도와드릴까요?" (How can I help you?)`,
+                        `"예약하시겠습니까?" (Would you like to make an appointment?)`,
+                        `"성함이 어떻게 되시나요?" (What is your name?)`,
+                        `"전화번호가 어떻게 되시나요?" (What is your phone number?)`,
+                        `"이 시간이 괜찮으신가요?" (Is this time okay for you?)`,
+                        `"시간 내주셔서 감사합니다" (Thank you for your time)`
+                    ],
+                    it: [
+                        `"Come posso aiutarla?" (How can I help you?)`,
+                        `"Desidera fissare un appuntamento?" (Would you like to schedule an appointment?)`,
+                        `"Qual è il suo nome?" (What is your name?)`,
+                        `"Qual è il suo numero di telefono?" (What is your phone number?)`,
+                        `"Questo orario le va bene?" (Is this time good for you?)`,
+                        `"Grazie per il suo tempo" (Thank you for your time)`
+                    ],
+                    nl: [
+                        `"Hoe kan ik u helpen?" (How can I help you?)`,
+                        `"Wilt u een afspraak maken?" (Would you like to make an appointment?)`,
+                        `"Wat is uw naam?" (What is your name?)`,
+                        `"Wat is uw telefoonnummer?" (What is your phone number?)`,
+                        `"Komt deze tijd u uit?" (Does this time suit you?)`,
+                        `"Bedankt voor uw tijd" (Thank you for your time)`
+                    ],
+                    ru: [
+                        `"Чем я могу вам помочь?" (How can I help you?)`,
+                        `"Хотите записаться на встречу?" (Would you like to schedule a meeting?)`,
+                        `"Как вас зовут?" (What is your name?)`,
+                        `"Какой у вас номер телефона?" (What is your phone number?)`,
+                        `"Это время вам подходит?" (Does this time suit you?)`,
+                        `"Спасибо за ваше время" (Thank you for your time)`
+                    ],
+                    pl: [
+                        `"Jak mogę pomóc?" (How can I help you?)`,
+                        `"Czy chciałby Pan/Pani umówić się na spotkanie?" (Would you like to schedule a meeting?)`,
+                        `"Jak się Pan/Pani nazywa?" (What is your name?)`,
+                        `"Jaki jest Pana/Pani numer telefonu?" (What is your phone number?)`,
+                        `"Czy ten termin Panu/Pani odpowiada?" (Does this time suit you?)`,
+                        `"Dziękuję za poświęcony czas" (Thank you for your time)`
+                    ],
+                    tr: [
+                        `"Size nasıl yardımcı olabilirim?" (How can I help you?)`,
+                        `"Randevu almak ister misiniz?" (Would you like to make an appointment?)`,
+                        `"Adınız nedir?" (What is your name?)`,
+                        `"Telefon numaranız nedir?" (What is your phone number?)`,
+                        `"Bu saat size uygun mu?" (Is this time suitable for you?)`,
+                        `"Zaman ayırdığınız için teşekkürler" (Thank you for your time)`
+                    ],
+                    vi: [
+                        `"Tôi có thể giúp gì cho bạn?" (How can I help you?)`,
+                        `"Bạn có muốn đặt lịch hẹn không?" (Would you like to make an appointment?)`,
+                        `"Xin cho biết tên của bạn?" (What is your name?)`,
+                        `"Số điện thoại của bạn là gì?" (What is your phone number?)`,
+                        `"Thời gian này có phù hợp với bạn không?" (Is this time suitable for you?)`,
+                        `"Cảm ơn bạn đã dành thời gian" (Thank you for your time)`
+                    ]
+                };
+                
+                // Show phrases for secondary language (or primary if not English)
+                const showLang = lang2 || (lang1 !== 'en' ? lang1 : null);
+                if (showLang && callPhrases[showLang]) {
+                    p += `**Common ${langNames[showLang]} phrases for calls:**\n`;
+                    callPhrases[showLang].forEach(phrase => {
+                        p += `- ${phrase}\n`;
+                    });
+                    p += `\n`;
+                }
+            } else {
+                p += `## Language\nRespond in ${langNames[lang1]}.\n\n`;
+            }
+            
+            // Variables
+            const vars = getVariables();
+            if (Object.keys(vars).length > 0) {
+                p += `## Key Information\n`;
+                if (vars.business_hours) p += `- Business Hours: ${vars.business_hours}\n`;
+                if (vars.support_phone) p += `- Support Phone: ${vars.support_phone}\n`;
+                if (vars.support_email) p += `- Support Email: ${vars.support_email}\n`;
+                if (vars.website) p += `- Website: ${vars.website}\n`;
+                if (vars.transfer_number) p += `- Transfer Number: ${vars.transfer_number}\n`;
+                if (vars.max_wait) p += `- Max Wait Time: ${vars.max_wait}\n`;
+                // Custom vars
+                Object.entries(vars).forEach(([k, v]) => {
+                    if (!['business_hours', 'support_phone', 'support_email', 'website', 'transfer_number', 'max_wait'].includes(k)) {
+                        p += `- ${k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}: ${v}\n`;
+                    }
+                });
+                p += `\nUse these values when relevant during the conversation.\n\n`;
+            }
+            
+            if (context) p += `## Context\n${context}\n\n`;
+            
+            // Verification
+            const verifyFeatures = [...state.features].filter(f => f.startsWith('verify_'));
+            if (verifyFeatures.length > 0) {
+                p += `## Verification\nBefore accessing account information, verify the caller's identity using:\n`;
+                if (state.features.has('verify_phone')) p += `- Phone number (match against records)\n`;
+                if (state.features.has('verify_dob')) p += `- Date of birth\n`;
+                if (state.features.has('verify_account')) p += `- Account or order number\n`;
+                if (state.features.has('verify_zip')) p += `- Billing ZIP/postal code\n`;
+                if (state.features.has('verify_pin')) p += `- Security PIN\n`;
+                if (state.features.has('verify_ssn')) p += `- Last 4 digits of SSN (via keypad)\n`;
+                p += `\n`;
+            }
+            
+            // Integrations
+            if (state.integrations.size > 0) {
+                p += `## Integrations\n\n`;
+                if (state.integrations.has('salesforce')) {
+                    p += `**Salesforce**\nTools: \`lookup_contact\`, \`create_case\`, \`update_case\`, \`lookup_order\`, \`create_lead\`\nUse to look up customer records, view history, and manage support cases.\n\n`;
+                }
+                if (state.integrations.has('hubspot')) {
+                    p += `**HubSpot**\nTools: \`lookup_contact\`, \`lookup_deal\`, \`create_contact\`, \`create_ticket\`, \`log_activity\`\nUse to access contacts, deals, and log call activities.\n\n`;
+                }
+                if (state.integrations.has('zendesk')) {
+                    p += `**Zendesk**\nTools: \`lookup_user\`, \`create_ticket\`, \`update_ticket\`, \`search_tickets\`\nUse to manage support tickets and customer history.\n\n`;
+                }
+                if (state.integrations.has('google_calendar')) {
+                    p += `**Google Calendar**\nTools: \`check_availability\`, \`book_appointment\`, \`reschedule\`, \`cancel\`\nUse to check slots and manage appointments.\n\n`;
+                }
+                if (state.integrations.has('calendly')) {
+                    p += `**Calendly**\nTools: \`list_event_types\`, \`check_availability\`, \`create_booking\`, \`cancel_booking\`, \`reschedule\`\nUse to list meeting types and book appointments.\n\n`;
+                }
+                if (state.integrations.has('shopify')) {
+                    p += `**Shopify**\nTools: \`lookup_order\`, \`order_status\`, \`lookup_product\`, \`check_inventory\`\nUse to check orders, products, and inventory levels.\n\n`;
+                }
+                if (state.integrations.has('stripe')) {
+                    p += `**Stripe**\nTools: \`lookup_payment\`, \`lookup_subscription\`, \`refund_payment\`, \`update_subscription\`\nUse to check payments, subscriptions, and process refunds.\n\n`;
+                }
+                if (state.integrations.has('slack')) {
+                    p += `**Slack**\nTools: \`send_message\`, \`create_channel\`, \`notify_team\`\nUse to notify internal teams or escalate issues.\n\n`;
+                }
+                if (state.integrations.has('jira')) {
+                    p += `**Jira**\nTools: \`create_issue\`, \`update_issue\`, \`search_issues\`, \`add_comment\`\nUse to create and manage technical issues.\n\n`;
+                }
+                if (state.integrations.has('freshdesk')) {
+                    p += `**Freshdesk**\nTools: \`lookup_contact\`, \`create_ticket\`, \`update_ticket\`, \`list_tickets\`\nUse to manage support tickets.\n\n`;
+                }
+                if (state.integrations.has('servicenow')) {
+                    p += `**ServiceNow**\nTools: \`create_incident\`, \`update_incident\`, \`lookup_incident\`, \`create_request\`\nUse for IT service management and incidents.\n\n`;
+                }
+                if (state.integrations.has('database')) {
+                    p += `**Database**\nTools: \`customer_lookup\`, \`order_history\`, \`account_balance\`\nUse to look up customer data.\n\n`;
+                }
+            }
+            
+            // SMS
+            const smsFeatures = [...state.features].filter(f => f.startsWith('sms_'));
+            if (smsFeatures.length > 0) {
+                p += `## SMS\nTool: \`send_sms\` (destination_number, message)\nUse SMS to:\n`;
+                if (state.features.has('sms_confirm')) p += `- Send confirmation numbers and reference IDs\n`;
+                if (state.features.has('sms_links')) p += `- Send links to resources, forms, or documentation\n`;
+                if (state.features.has('sms_summary')) p += `- Send a summary after the call ends\n`;
+                p += `Always ask before sending. Only send to verified numbers.\n\n`;
+            }
+            
+            // Call Handling
+            if (state.features.has('transfer_warm')) {
+                const dest = vars.transfer_number ? ` Default destination: ${vars.transfer_number}` : '';
+                p += `## Warm Transfer\nTool: \`transfer_call\` (destination, announce: true)\nBrief the receiving agent before connecting the caller.${dest}\n\n`;
+            }
+            if (state.features.has('transfer_cold')) {
+                const dest = vars.transfer_number ? ` Default destination: ${vars.transfer_number}` : '';
+                p += `## Cold Transfer\nTool: \`transfer_call\` (destination)\nTransfer directly without briefing. Inform the caller first.${dest}\n\n`;
+            }
+            if (state.features.has('callback')) {
+                p += `## Callback Scheduling\nTool: \`schedule_callback\` (phone, datetime)\nOffer to schedule a callback if wait times are long or issue needs research.\n\n`;
+            }
+            if (state.features.has('voicemail')) {
+                p += `## Voicemail Detection\nIf voicemail is detected, leave a brief message with callback number. Keep under 30 seconds.\n\n`;
+            }
+            
+            // Security
+            if (state.features.has('dtmf')) {
+                p += `## Secure Input (DTMF)\nFor sensitive data (SSN, card numbers, PINs), ask caller to enter via keypad, not voice.\n\n`;
+            }
+            if (state.features.has('pci')) {
+                p += `## PCI Compliance\nNever store or repeat full card numbers. Mask all but last 4 digits in logs.\n\n`;
+            }
+            
+            // Availability
+            if (state.features.has('hours')) {
+                const hoursVal = vars.business_hours || 'Monday-Friday, 9 AM - 6 PM local time';
+                p += `## Business Hours\nBusiness hours: ${hoursVal}.\nCheck current time before offering live support.\n\n`;
+            }
+            if (state.features.has('after_hours')) {
+                p += `## After-Hours\nOutside business hours: Inform caller, offer voicemail or callback scheduling.\n\n`;
+            }
+            if (state.features.has('holiday')) {
+                p += `## Holidays\nOn holidays: Provide limited service, offer to take a message or schedule callback.\n\n`;
+            }
+            
+            p += `## Guidelines\n- Keep responses concise — this is a phone call\n- Confirm important details by repeating them back\n- Ask if there's anything else before ending the call`;
+            
+            document.getElementById('output').innerHTML = `
+                <div class="output-header">
+                    <div class="output-dot"></div>
+                    <div class="output-dot"></div>
+                    <div class="output-dot"></div>
+                </div>
+                ${escapeHtml(p)}<span class="typing-cursor"></span>
+            `;
+        }
+        
+        function escapeHtml(text) {
+            return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+        
+        function copyPrompt() {
+            const text = document.getElementById('output').textContent.trim();
+            navigator.clipboard.writeText(text);
+            createConfetti();
+            const toast = document.getElementById('toast');
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+        
+        function createConfetti() {
+            const colors = ['#00c896', '#6366f1', '#ec4899', '#22d3ee', '#f59e0b'];
+            for (let i = 0; i < 50; i++) {
+                const c = document.createElement('div');
+                c.className = 'confetti';
+                c.style.left = Math.random() * 100 + 'vw';
+                c.style.top = '-10px';
+                c.style.background = colors[Math.floor(Math.random() * colors.length)];
+                c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                c.style.width = (5 + Math.random() * 10) + 'px';
+                c.style.height = (5 + Math.random() * 10) + 'px';
+                c.style.animationDuration = (2 + Math.random() * 2) + 's';
+                document.body.appendChild(c);
+                setTimeout(() => c.remove(), 4000);
+            }
+        }
+        
+        function downloadPrompt() {
+            const text = document.getElementById('output').textContent.trim();
+            const blob = new Blob([text], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'telnyx-ai-prompt.txt';
+            a.click();
+        }
+        
+        function downloadJSON() {
+            const config = {
+                assistant: {
+                    name: document.getElementById('name').value,
+                    company: document.getElementById('company').value,
+                    role: document.getElementById('role').value,
+                    tone: document.getElementById('tone').value,
+                    industry: document.getElementById('industry').value
+                },
+                language: {
+                    primary: document.getElementById('lang1').value,
+                    secondary: document.getElementById('lang2').value || null
+                },
+                integrations: [...state.integrations],
+                features: [...state.features],
+                variables: getVariables(),
+                context: document.getElementById('context').value,
+                prompt: document.getElementById('output').textContent.trim()
+            };
+            
+            const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'telnyx-ai-config.json';
+            a.click();
+        }
+        
+        function updateStats() {
+            const text = document.getElementById('output').textContent.trim();
+            const chars = text.length;
+            const words = text.split(/\s+/).filter(w => w).length;
+            const tokens = Math.ceil(chars / 4); // Rough estimate
+            document.getElementById('stats').innerHTML = `
+                <div><span>${chars.toLocaleString()}</span> characters</div>
+                <div><span>${words.toLocaleString()}</span> words</div>
+                <div>~<span>${tokens.toLocaleString()}</span> tokens</div>
+            `;
+            
+            // Update counts
+            const intCount = state.integrations.size;
+            const intBadge = document.getElementById('int-count');
+            intBadge.textContent = intCount + ' selected';
+            intBadge.classList.toggle('active', intCount > 0);
+            
+            const featCount = state.features.size;
+            const featBadge = document.getElementById('feat-count');
+            featBadge.textContent = featCount + ' selected';
+            featBadge.classList.toggle('active', featCount > 0);
+        }
+        
+        // Call updateStats after generate
+        const originalGenerate = generate;
+        generate = function() {
+            originalGenerate();
+            updateStats();
+        };
+        
+        generate();
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                downloadPrompt();
+            }
+        });
+        
+        // Smooth scroll to output when FAB clicked on mobile
+        if (window.innerWidth <= 480) {
+            document.querySelector('.fab').addEventListener('click', () => {
+                setTimeout(() => {
+                    document.getElementById('output').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100);
+            });
+        }
+    </script>
+</body>
+</html>
