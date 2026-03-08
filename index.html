@@ -1220,8 +1220,8 @@
                         <textarea id="context" placeholder="Add business-specific instructions, products, policies..."></textarea>
                     </div>
                     <div class="generate-actions">
-                        <button class="btn btn-primary" onclick="generate()">✨ Generate Prompt</button>
-                        <button class="btn btn-secondary" onclick="generateWithAI()" id="aiGenerateBtn">🧠 Enhance with AI</button>
+                        <button class="btn btn-secondary" onclick="generate()">📝 Template Prompt</button>
+                        <button class="btn btn-primary" onclick="generateWithAI()" id="aiGenerateBtn">🧠 Generate with AI</button>
                     </div>
                 </div>
             </div>
@@ -1709,7 +1709,7 @@
             localStorage.setItem('telnyxApiKey', e.target.value);
         });
         
-        // AI Enhancement function
+        // AI Generation function - creates prompt from scratch using all parameters
         async function generateWithAI() {
             const apiKey = document.getElementById('telnyxApiKey').value.trim();
             if (!apiKey) {
@@ -1717,19 +1717,47 @@
                 return;
             }
             
-            // First generate the base prompt
-            generate();
-            const basePrompt = document.getElementById('output').textContent.trim();
-            
-            if (!basePrompt || basePrompt.includes('Configure your assistant')) {
-                alert('Please configure the assistant options first');
-                return;
-            }
-            
             const btn = document.getElementById('aiGenerateBtn');
             const originalText = btn.textContent;
-            btn.textContent = '🔄 Enhancing...';
+            btn.textContent = '🔄 Generating...';
             btn.disabled = true;
+            
+            // Gather all parameters
+            const params = {
+                name: document.getElementById('name').value || 'Assistant',
+                company: document.getElementById('company').value || 'Company',
+                industry: document.getElementById('industry').value,
+                role: document.getElementById('role').value,
+                personality: document.getElementById('tone').value,
+                primaryLanguage: document.getElementById('lang1').options[document.getElementById('lang1').selectedIndex].text,
+                secondaryLanguage: document.getElementById('lang2').value ? document.getElementById('lang2').options[document.getElementById('lang2').selectedIndex].text : null,
+                integrations: [...state.integrations],
+                features: [...state.features],
+                businessHours: document.getElementById('var_hours').value,
+                supportPhone: document.getElementById('var_phone').value,
+                supportEmail: document.getElementById('var_email').value,
+                website: document.getElementById('var_website').value,
+                customContext: document.getElementById('context').value
+            };
+            
+            // Build the context for AI
+            const contextParts = [];
+            contextParts.push(`Assistant Name: ${params.name}`);
+            contextParts.push(`Company: ${params.company}`);
+            if (params.industry) contextParts.push(`Industry: ${params.industry}`);
+            contextParts.push(`Role: ${params.role}`);
+            contextParts.push(`Personality/Tone: ${params.personality}`);
+            contextParts.push(`Primary Language: ${params.primaryLanguage}`);
+            if (params.secondaryLanguage) contextParts.push(`Secondary Language: ${params.secondaryLanguage}`);
+            if (params.integrations.length) contextParts.push(`Integrations: ${params.integrations.join(', ')}`);
+            if (params.features.length) contextParts.push(`Features: ${params.features.join(', ')}`);
+            if (params.businessHours) contextParts.push(`Business Hours: ${params.businessHours}`);
+            if (params.supportPhone) contextParts.push(`Support Phone: ${params.supportPhone}`);
+            if (params.supportEmail) contextParts.push(`Support Email: ${params.supportEmail}`);
+            if (params.website) contextParts.push(`Website: ${params.website}`);
+            if (params.customContext) contextParts.push(`Additional Context: ${params.customContext}`);
+            
+            const userPrompt = `Create a comprehensive voice AI assistant prompt based on these parameters:\n\n${contextParts.join('\n')}`;
             
             try {
                 const response = await fetch('https://api.telnyx.com/v2/ai/chat/completions', {
@@ -1743,15 +1771,25 @@
                         messages: [
                             {
                                 role: 'system',
-                                content: 'You are an expert at writing voice AI assistant prompts. Improve the given prompt to be clearer, more natural, and more effective for voice conversations. Keep the same structure and requirements, but enhance the language and add helpful details. Return ONLY the improved prompt, no explanations.'
+                                content: `You are an expert at writing voice AI assistant system prompts. Create a detailed, production-ready system prompt based on the given parameters.
+
+The prompt should include:
+1. A clear identity section (who the assistant is, personality, tone)
+2. Language handling instructions
+3. Integration usage instructions if integrations are specified (describe how to use tools like \`lookup_crm\`, \`send_sms\`, \`transfer_call\`, \`schedule_appointment\` etc.)
+4. Feature-specific instructions (verification flows, call handling, messaging)
+5. Business-specific context and guidelines
+6. Voice conversation best practices (concise responses, confirmation of details, natural speech patterns)
+
+Format the output as a clean, well-structured system prompt using markdown headers. Return ONLY the prompt, no meta-commentary or explanations.`
                             },
                             {
                                 role: 'user',
-                                content: `Please enhance this voice AI assistant prompt:\n\n${basePrompt}`
+                                content: userPrompt
                             }
                         ],
                         temperature: 0.7,
-                        max_tokens: 2000
+                        max_tokens: 3000
                     })
                 });
                 
@@ -1761,7 +1799,11 @@
                 }
                 
                 const data = await response.json();
-                const enhancedPrompt = data.choices[0]?.message?.content || basePrompt;
+                const generatedPrompt = data.choices[0]?.message?.content;
+                
+                if (!generatedPrompt) {
+                    throw new Error('No response from AI');
+                }
                 
                 document.getElementById('output').innerHTML = `
                     <div class="output-header">
@@ -1769,16 +1811,16 @@
                         <div class="output-dot"></div>
                         <div class="output-dot"></div>
                     </div>
-                    <div style="color: var(--primary); margin-bottom: 0.5rem; font-size: 0.8rem;">✨ AI Enhanced</div>
-                    ${escapeHtml(enhancedPrompt)}
+                    <div style="color: var(--primary); margin-bottom: 0.5rem; font-size: 0.8rem;">🧠 AI Generated</div>
+                    ${escapeHtml(generatedPrompt)}
                 `;
                 
-                updateStats(enhancedPrompt);
-                showToast('✨ Prompt enhanced with AI!');
+                updateStats(generatedPrompt);
+                showToast('🧠 Prompt generated with AI!');
                 
             } catch (err) {
-                console.error('AI enhancement failed:', err);
-                alert(`AI enhancement failed: ${err.message}\n\nThe base prompt is still shown above.`);
+                console.error('AI generation failed:', err);
+                alert(`AI generation failed: ${err.message}`);
             } finally {
                 btn.textContent = originalText;
                 btn.disabled = false;
