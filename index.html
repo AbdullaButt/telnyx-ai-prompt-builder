@@ -1178,7 +1178,12 @@
                 <div class="section-content">
                     <div class="form-row">
                         <label>Telnyx API Key</label>
-                        <input type="password" id="telnyxApiKey" placeholder="KEY019... (stored locally, never sent to our servers)">
+                        <input type="password" id="telnyxApiKey" placeholder="KEY019...">
+                        <label class="feature-chip" style="margin-top: 0.5rem; width: fit-content;" data-feature="save_key">
+                            <input type="checkbox" id="saveApiKey" checked>
+                            <span class="chip-check">✓</span>
+                            <span>Remember key (uncheck for shared computers)</span>
+                        </label>
                     </div>
                     <div class="form-row">
                         <label>AI Model</label>
@@ -1707,9 +1712,39 @@
         
         // Telnyx API key persistence
         const savedApiKey = localStorage.getItem('telnyxApiKey');
-        if (savedApiKey) document.getElementById('telnyxApiKey').value = savedApiKey;
+        const savedSavePreference = localStorage.getItem('saveApiKey') !== 'false';
+        
+        document.getElementById('saveApiKey').checked = savedSavePreference;
+        if (savedApiKey && savedSavePreference) {
+            document.getElementById('telnyxApiKey').value = savedApiKey;
+        }
+        
+        // Update save checkbox styling
+        const saveCheckbox = document.getElementById('saveApiKey');
+        saveCheckbox.closest('.feature-chip').classList.toggle('active', saveCheckbox.checked);
+        
+        saveCheckbox.addEventListener('change', e => {
+            e.target.closest('.feature-chip').classList.toggle('active', e.target.checked);
+            localStorage.setItem('saveApiKey', e.target.checked);
+            if (!e.target.checked) {
+                localStorage.removeItem('telnyxApiKey');
+            } else {
+                const key = document.getElementById('telnyxApiKey').value;
+                if (key) localStorage.setItem('telnyxApiKey', key);
+            }
+        });
+        
         document.getElementById('telnyxApiKey').addEventListener('change', e => {
-            localStorage.setItem('telnyxApiKey', e.target.value);
+            if (document.getElementById('saveApiKey').checked) {
+                localStorage.setItem('telnyxApiKey', e.target.value);
+            }
+        });
+        
+        // Clear key on page unload if "remember" is unchecked
+        window.addEventListener('beforeunload', () => {
+            if (!document.getElementById('saveApiKey').checked) {
+                localStorage.removeItem('telnyxApiKey');
+            }
         });
         
         // AI Generation function - creates prompt from scratch using all parameters
